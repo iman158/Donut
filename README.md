@@ -1,24 +1,36 @@
-This code is a Python implementation of a 3D ASCII art animation using pygame. It generates a rotating torus shape and displays it as ASCII characters on the screen, creating a mesmerizing effect. The torus is created by calculating the 3D coordinates of points on its surface and projecting them onto a 2D plane for display.
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Here's a brief description for a GitHub repository for this code:
-3D ASCII Art Animation with Pygame
+## Getting Started
 
-This Python script creates a mesmerizing 3D ASCII art animation of a rotating torus using Pygame. The torus is rendered using ASCII characters, giving it a retro yet dynamic visual effect.
-Features
+First, run the development server:
 
-    Real-time 3D rendering of a rotating torus
-    ASCII character representation for a vintage terminal look
-    Smooth animation with adjustable frame rate
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-How to Run
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-    Make sure you have Python and Pygame installed.
-    Clone this repository to your local machine.
-    Run python ascii_torus.py in your terminal.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Controls
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-    Press Space to pause/resume the animation.
-    Press Esc or close the window to exit.
+## Learn More
 
-Feel free to customize the code, adjust parameters, or integrate it into your projects for unique visual effects!
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
