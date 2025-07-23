@@ -35,69 +35,115 @@ export default function TorusGamePage() {
     }
 
     // Clear canvas
-    ctx.fillStyle = "#111111"
+    ctx.fillStyle = "#000000"
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
     const centerX = CANVAS_WIDTH / 2
     const centerY = CANVAS_HEIGHT / 2
-    const angle = angleRef.current
+    const A = angleRef.current
+    const B = angleRef.current * 0.5
     const frameCount = frameCountRef.current
 
-    console.log(`Drawing frame ${frameCount}, angle: ${angle.toFixed(2)}`)
+    console.log(`Drawing frame ${frameCount}, A: ${A.toFixed(2)}, B: ${B.toFixed(2)}`)
 
-    // Draw rotating line (simple test)
-    ctx.strokeStyle = "#00ff00"
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.moveTo(centerX, centerY)
-    ctx.lineTo(centerX + 100 * Math.cos(angle), centerY + 100 * Math.sin(angle))
-    ctx.stroke()
+    // Donut parameters (same as your Python code)
+    const R1 = 1 // Minor radius
+    const R2 = 2 // Major radius
+    const K2 = 5 // Distance from viewer
+    const screen_width = 80
+    const screen_height = 60
+    const K1 = (screen_height * K2 * 3) / (8 * (R1 + R2))
 
-    // Draw rotating dot
-    const dotX = centerX + 150 * Math.cos(angle * 2)
-    const dotY = centerY + 150 * Math.sin(angle * 2)
-    ctx.fillStyle = "#ff0000"
-    ctx.beginPath()
-    ctx.arc(dotX, dotY, 8, 0, Math.PI * 2)
-    ctx.fill()
+    const chars = ".,-~:;=!*#$@"
+    const output = new Array(screen_width * screen_height).fill(" ")
+    const zbuffer = new Array(screen_width * screen_height).fill(0)
 
-    // Draw simple torus-like pattern
-    ctx.font = "14px monospace"
+    // Generate 3D donut (exact same math as your Python code)
+    for (let theta = 0; theta < 628; theta += 10) {
+      // theta goes around the cross-sectional circle
+      for (let phi = 0; phi < 628; phi += 3) {
+        // phi goes around the center of revolution
+        const cosA = Math.cos(A)
+        const sinA = Math.sin(A)
+        const cosB = Math.cos(B)
+        const sinB = Math.sin(B)
+        const costheta = Math.cos(theta / 100)
+        const sintheta = Math.sin(theta / 100)
+        const cosphi = Math.cos(phi / 100)
+        const sinphi = Math.sin(phi / 100)
+
+        // x, y coordinates before revolving
+        const circlex = R2 + R1 * costheta
+        const circley = R1 * sintheta
+
+        // 3D (x, y, z) coordinates after rotation
+        const x = circlex * (cosB * cosphi + sinA * sinB * sinphi) - circley * cosA * sinB
+        const y = circlex * (sinB * cosphi - sinA * cosB * sinphi) + circley * cosA * cosB
+        const z = K2 + cosA * circlex * sinphi + circley * sinA
+
+        const ooz = 1 / z // one over z
+
+        // x, y projection
+        const xp = Math.floor(screen_width / 2 + K1 * ooz * x)
+        const yp = Math.floor(screen_height / 2 - K1 * ooz * y)
+
+        if (xp >= 0 && xp < screen_width && yp >= 0 && yp < screen_height) {
+          const position = xp + screen_width * yp
+
+          // luminance (L ranges from -sqrt(2) to sqrt(2))
+          const L =
+            cosphi * costheta * sinB -
+            cosA * costheta * sinphi -
+            sinA * sintheta +
+            cosB * (cosA * sintheta - costheta * sinA * sinphi)
+
+          if (ooz > zbuffer[position]) {
+            zbuffer[position] = ooz // larger ooz means closer to viewer
+            const luminance_index = Math.floor(L * 8) // multiply by 8 to get range 0..11
+            output[position] = chars[Math.max(0, Math.min(chars.length - 1, luminance_index))]
+          }
+        }
+      }
+    }
+
+    // Render the donut using ASCII characters
+    ctx.font = "10px monospace"
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
 
-    const chars = " .:-=+*#%@"
+    const pixel_width = CANVAS_WIDTH / screen_width
+    const pixel_height = CANVAS_HEIGHT / screen_height
 
-    for (let i = 0; i < 50; i++) {
-      const theta = (i / 50) * Math.PI * 2
-      const radius = 120 + 40 * Math.sin(theta * 3 + angle * 3)
+    for (let i = 0; i < screen_height; i++) {
+      for (let j = 0; j < screen_width; j++) {
+        const char = output[j + screen_width * i]
+        if (char !== " ") {
+          const x = j * pixel_width + pixel_width / 2
+          const y = i * pixel_height + pixel_height / 2
 
-      const x = centerX + radius * Math.cos(theta + angle)
-      const y = centerY + radius * Math.sin(theta + angle) * 0.6
+          // Color based on character brightness and rotation
+          const brightness = chars.indexOf(char) / chars.length
+          const hue = (A + brightness) * 0.1
+          const intensity = colorIntensity[0]
 
-      const charIndex = Math.floor((Math.sin(theta * 2 + angle * 2) + 1) * 0.5 * (chars.length - 1))
-      const char = chars[charIndex]
+          const r = Math.floor(128 + 100 * Math.sin(hue) * intensity + 50 * brightness)
+          const g = Math.floor(128 + 100 * Math.sin(hue + 2) * intensity + 50 * brightness)
+          const b = Math.floor(128 + 100 * Math.sin(hue + 4) * intensity + 50 * brightness)
 
-      // Color
-      const hue = (theta + angle) * 0.5
-      const intensity = colorIntensity[0]
-      const r = Math.floor(128 + 100 * Math.sin(hue) * intensity)
-      const g = Math.floor(128 + 100 * Math.sin(hue + 2) * intensity)
-      const b = Math.floor(128 + 100 * Math.sin(hue + 4) * intensity)
-
-      ctx.fillStyle = `rgb(${Math.max(50, Math.min(255, r))}, ${Math.max(50, Math.min(255, g))}, ${Math.max(50, Math.min(255, b))})`
-      ctx.fillText(char, x, y)
+          ctx.fillStyle = `rgb(${Math.max(50, Math.min(255, r))}, ${Math.max(50, Math.min(255, g))}, ${Math.max(50, Math.min(255, b))})`
+          ctx.fillText(char, x, y)
+        }
+      }
     }
 
     // Status text
     ctx.fillStyle = "#ffffff"
     ctx.font = "16px monospace"
-    ctx.fillText(`FRAME: ${frameCount}`, centerX, 50)
-    ctx.fillText(`ANGLE: ${Math.floor((angle * 180) / Math.PI)}°`, centerX, 70)
-    ctx.fillText(`SPEED: ${rotationSpeed[0]}x`, centerX, 90)
+    ctx.fillText(`3D DONUT - FRAME: ${frameCount}`, centerX, 30)
+    ctx.fillText(`ROTATION: ${Math.floor((A * 180) / Math.PI)}°`, centerX, CANVAS_HEIGHT - 30)
 
-    // Update for next frame
-    angleRef.current += 0.05 * rotationSpeed[0]
+    // Update rotation angles (same as your Python code)
+    angleRef.current += 0.15 * rotationSpeed[0] // A += 0.15
     frameCountRef.current += 1
   }
 
@@ -218,8 +264,10 @@ export default function TorusGamePage() {
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-light text-slate-100 mb-3 tracking-wide">3D Torus Animation Test</h1>
-          <p className="text-slate-400 text-lg font-light">Simple animation with rotating elements</p>
+          <h1 className="text-4xl font-light text-slate-100 mb-3 tracking-wide">3D Donut Visualization</h1>
+          <p className="text-slate-400 text-lg font-light">
+            Rotating ASCII donut - just like the original Python version
+          </p>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -345,13 +393,13 @@ export default function TorusGamePage() {
           {/* Animation Canvas */}
           <Card className="xl:col-span-3 bg-slate-800/50 border-slate-700/50 backdrop-blur-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-slate-100 text-lg font-medium">Animation Test</CardTitle>
+              <CardTitle className="text-slate-100 text-lg font-medium">3D Donut Animation</CardTitle>
               <CardDescription className="text-slate-400 font-light">
                 {isRunning
                   ? isPaused
-                    ? "Animation paused - click resume to continue"
-                    : "Animation running - you should see rotating elements"
-                  : "Ready to start - click play button"}
+                    ? "Donut paused - click resume to continue spinning"
+                    : "3D donut spinning - exact same math as your Python code!"
+                  : "Ready to spin the donut - click play button"}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
